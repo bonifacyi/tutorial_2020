@@ -82,7 +82,6 @@ def gen_spine(x, y, size, color, prop, count, corner=None):
         spine_x = x + randint(-x_limit, x_limit)
         y_limit = int(sqrt((size / 2) ** 2 - (spine_x - x) ** 2) * prop)
         spine_y = y + randint(-y_limit, y_limit)
-        print(x_limit, y_limit)
         if corner is None:
             spine_corner = randint(0, 30) if spine_x >= x else -randint(0, 30)
         else:
