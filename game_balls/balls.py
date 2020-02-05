@@ -9,8 +9,9 @@ COLOR = ['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple']
 
 
 class Ball:
-    def __init__(self, canvas, x, y):
+    def __init__(self, canvas, x, y, other_balls):
         self.canvas = canvas
+        self.other_balls = other_balls
         self.R = randint(20, 50)
         self.x = x
         self.y = y
@@ -19,6 +20,7 @@ class Ball:
         self.color = choice(COLOR)
         self.ball_id = self.create_ball()
         self.level = 50 * (self.dx ** 2 + self.dy ** 2) // self.R
+        print(self.dx, self.dy)
 
     def create_ball(self):
         if self.x < self.R:
@@ -51,11 +53,16 @@ class Ball:
         for ball in balls:
             delta = ((self.x - ball.x) ** 2 + (self.y - ball.y) ** 2) ** 0.5
             if delta < self.R + ball.R and self != ball:
+                # print(self.dx, self.dy, ball.dx, ball.dy)
                 self.dx, ball.dx = ball.dx, self.dx     # TODO
                 self.dy, ball.dy = ball.dy, self.dy
+                # print(self.dx, self.dy, ball.dx, ball.dy)
 
-    def check_collision(self, balls):
-        pass
+    def check_collision(self):
+        for ball in self.other_balls:
+            delta = ((self.x - ball.x) ** 2 + (self.y - ball.y) ** 2) ** 0.5
+            # if delta < self.R + ball.R:
+
 
     def check_destroy(self, check_x, check_y):
         if (check_x - self.x) ** 2 + (check_y - self.y) ** 2 <= self.R ** 2:
@@ -79,7 +86,7 @@ class Block:
         for ball in self.balls:
             if ball.check_destroy(event.x, event.y):
                 return
-        self.balls.append(Ball(self.canvas, event.x, event.y))
+        self.balls.append(Ball(self.canvas, event.x, event.y, self.balls))
 
     def tick(self):
         for ball in self.balls:
