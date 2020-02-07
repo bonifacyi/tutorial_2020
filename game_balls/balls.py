@@ -54,7 +54,7 @@ class Ball:
             delta = ((self.x - ball.x) ** 2 + (self.y - ball.y) ** 2) ** 0.5
             if delta < self.R + ball.R and self != ball:
                 # print(self.dx, self.dy, ball.dx, ball.dy)
-                self.dx, ball.dx = ball.dx, self.dx     # TODO
+                self.dx, ball.dx = ball.dx, self.dx
                 self.dy, ball.dy = ball.dy, self.dy
                 # print(self.dx, self.dy, ball.dx, ball.dy)
 
@@ -62,7 +62,6 @@ class Ball:
         for ball in self.other_balls:
             delta = ((self.x - ball.x) ** 2 + (self.y - ball.y) ** 2) ** 0.5
             # if delta < self.R + ball.R:
-
 
     def check_destroy(self, check_x, check_y):
         if (check_x - self.x) ** 2 + (check_y - self.y) ** 2 <= self.R ** 2:
