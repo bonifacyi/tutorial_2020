@@ -98,10 +98,8 @@ class Ball:
         """
         delta = ((self.x - obj.x) ** 2 + (self.y - obj.y) ** 2) ** 0.5
         if delta <= self.r + obj.r:
-            canvas.delete(self.id)
+            self.live = 0
             return True
-        else:
-            return False
 
     def ball_delete(self):
         if self.live == 0:
@@ -143,11 +141,11 @@ class Gun:
     def ball_cleaner(self):
         for_del = []
         for ball in self.balls.values():
-            delete = ball.ball_delete()
-            if delete:
-                for_del.append(delete)
-        for i in for_del:
-            del self.balls[i]
+            key = ball.ball_delete()
+            if key:
+                for_del.append(key)
+        for key in for_del:
+            del self.balls[key]
 
     def targeting(self, event=0):
         """Прицеливание. Зависит от положения мыши."""
@@ -220,7 +218,7 @@ class MainBlock:
         self.points = 0
         self.id_points = canvas.create_text(30, 30, text=self.points, font='28')
         self.screen = canvas.create_text(400, 300, text='', font='28')
-        self.targets = []
+        self.targets = dict()
         self.game_round()
 
     def game_round(self):
@@ -228,7 +226,6 @@ class MainBlock:
         self.gen_target(TARGETS)
 
         self.gun.bullet = 0
-        self.gun.balls = dict()
         canvas.bind('<Button-1>', self.gun.fire2_start)
         canvas.bind('<ButtonRelease-1>', self.gun.fire2_end)
         canvas.bind('<Motion>', self.gun.targeting)
@@ -256,25 +253,30 @@ class MainBlock:
         else:
             canvas.itemconfig(self.screen, text='')
             canvas.delete(self.gun.id)
+            time.sleep(5)
             self.game_round()
 
     def gen_target(self, n):
-        for i in range(n):
+        for i in range(1, n+1):
             target = Target()
-            self.targets.append(target)
+            self.targets[i] = target
 
     def move_target(self):
-        for target in self.targets:
+        for target in self.targets.values():
             target.move_target()
         self.root.after(10, self.move_target)
 
     def hit_target(self, ball):
-        for i in range(len(self.targets)):
-            if ball.hittest(self.targets[i]):
-                canvas.delete(self.targets[i].id)
-                self.targets.pop(i)
-
-                return True
+        result = False
+        for_del = []
+        for key in self.targets:
+            if ball.hittest(self.targets[key]):
+                canvas.delete(self.targets[key].id)
+                for_del.append(key)
+                result = True
+        for key in for_del:
+            del self.targets[key]
+        return result
 
     def hit(self, points=1):
         """Попадание шарика в цель."""
