@@ -210,7 +210,7 @@ class MainBlock:
     def __init__(self):
         global canvas
         self.root = tk.Tk()
-        self.root.geometry('{}X{}'.format(*WINDOW_SHAPE))
+        self.root.geometry('{}x{}'.format(*WINDOW_SHAPE))
         canvas = tk.Canvas(self.root, bg='white')
         canvas.pack(fill=tk.BOTH, expand=1)
 
@@ -255,7 +255,8 @@ class MainBlock:
             canvas.itemconfig(self.round_message, text='')
             canvas.delete(self.gun.id)
 
-            self.game_round()
+            #self.game_round()
+            self.root.after(30, self.game_round)
 
     def gen_target(self, n):
         for i in range(1, n+1):
