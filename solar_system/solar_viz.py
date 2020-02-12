@@ -42,30 +42,34 @@ class CosmicBody(Agent):
     def __init__(
             self,
             canvas,
-            x,
-            y,
+            alpha_start,
             size_r,
-            rotation_r,
+            rotation_a,
+            rotation_b,
+            alpha_a,
             period_of_rotation,
             color=None,
-            job_init=None
+            job_init=None,
+
     ):
         super().__init__()
         self.job = job_init
         self.canvas = canvas
-
-        self.x = x
-        self.y = y
+        self.alpha = alpha_start
         self.size_r = size_r
-        self.pivot_x = WINDOW_SHAPE[0] // 2
-        self.pivot_y = WINDOW_SHAPE[1] // 2
-        self.rotation_r = rotation_r
+        self.pivot_x = WINDOW_SHAPE[0] / 2
+        self.pivot_y = WINDOW_SHAPE[1] / 2
+        self.rotation_a = rotation_a
+        self.rotation_b = rotation_b
+        self.alpha_a = alpha_a
         self.period_of_rotation = period_of_rotation
         if color is None:
             self.color = choice(['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple'])
         else:
             self.color = color
 
+        self.x = rotation_a * math.cos(self.alpha) + self.pivot_x
+        self.y = self.pivot_y - rotation_b * math.sin(self.alpha)
         self.id = self.canvas.create_oval(
             self.x - self.size_r,
             self.y - self.size_r,
@@ -87,13 +91,16 @@ class CosmicBody(Agent):
         super().pause()
 
     def update(self):
-        self.x, self.y = cosmic_body_motion(
-            self.x, self.y,
-            self.rotation_r,
+        self.x, self.y, self.alpha = ellipse_cosmic_body_motion(
+            self.alpha,
+            self.rotation_a,
+            self.rotation_b,
+            self.alpha_a,
             self.pivot_x, self.pivot_y,
             DT, self.period_of_rotation
         )
         self.set_coord()
+        self.job = self.canvas.after(DT, self.update)
 
     def set_coord(self):
         self.canvas.coords(
@@ -118,14 +125,14 @@ class SolarField(tk.Canvas):
     def create_cosmic_objects(self):
         for key, value in self.cosmic_objects.items():
             size_r = value['r']
-            rotation_r = value['rotation_r']
-            period_of_rotation = 30 * value['period_of_rotation_in_days'] / 365
+            alpha_start = 2 * math.pi * value['alpha_start'] / 360
+            rotation_a = value['rotation_a']
+            rotation_b = value['rotation_b']
+            alpha_a = 2 * math.pi * value['alpha_a'] / 360
+            period_of_rotation = SPEED * value['period_of_rotation_in_days'] / 365
             color = '#{0:0^2x}{1:0^2x}{2:0^2x}'.format(*value['color'])
 
-            x = rotation_r * math.cos(2 * math.pi * value['alpha'] / 360) + WINDOW_SHAPE[0] / 2
-            y = rotation_r * math.sin(2 * math.pi * value['alpha'] / 360) + WINDOW_SHAPE[1] / 2
-
-            obj = CosmicBody(self, x, y, size_r, rotation_r, period_of_rotation, color)
+            obj = CosmicBody(self, alpha_start, size_r, rotation_a, rotation_b, alpha_a, period_of_rotation, color)
             self.planets[key] = obj
 
     def get_state(self):
@@ -139,9 +146,6 @@ class SolarField(tk.Canvas):
         self.remove_planets()
         self.create_cosmic_objects()
         self.start()
-
-    def new_solar_system(self):
-        pass
 
     def start(self):
         for planet in self.planets.values():
@@ -166,6 +170,7 @@ class SolarField(tk.Canvas):
             keys = list(planets_to_remove)
         for key in keys:
             self.planets[key].destroy()
+            del self.planets[key]
 
 
 class MainFrame(tk.Frame):

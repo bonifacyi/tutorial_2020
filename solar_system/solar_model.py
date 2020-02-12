@@ -1,30 +1,28 @@
 import math
 
 
-def cosmic_body_motion(x, y, r, pivot_x, pivot_y, dt, period_of_rotation):
+def circular_cosmic_body_motion(alpha, r, pivot_x, pivot_y, dt, period_of_rotation):
     if r == 0:
-        return x, y
-    regarding_x = x - pivot_x
-    regarding_y = y - pivot_y
-    count = period_of_rotation * 100 / dt
-    ds = 2 * math.pi * r / count
-    dx = ds * regarding_y / r
-    dy = ds * regarding_x / r
-    x += dx
-    y += dy
-    print(dx, dy)
-    return x, y
+        return pivot_x, pivot_y, 0
+    count = period_of_rotation * 1000 / dt
+    delta_alpha = 2 * math.pi / count
+    alpha_new = alpha + delta_alpha
+    x = r * math.cos(alpha_new) + pivot_x
+    y = pivot_y - r * math.sin(alpha_new)
+    return x, y, alpha_new
 
 
-def convert_color(array):
-    new_array = []
-    for color in array:
-        new = str(hex(color))
-        new_array.append(new[2:])
-    new_color = '#{0:0^2x}{1:0^2x}{2:0^2x}'.format(*array)
-    return new_color
+def ellipse_cosmic_body_motion(alpha_start, a, b, alpha_a, pivot_x, pivot_y, dt, period_of_rotation):
+    if a * b == 0:
+        return pivot_x, pivot_y, 0
+    count = period_of_rotation * 1000 / dt
+    delta_alpha = 2 * math.pi / count
+    alpha_new = alpha_start + delta_alpha
+    x = a * math.cos(alpha_new) + pivot_x
+    y = pivot_y + b * math.sin(alpha_new)
+    return x, y, alpha_new
+
 
 
 if __name__ == '__main__':
-    c = convert_color((255, 255, 0))
-    print(c)
+    pass
