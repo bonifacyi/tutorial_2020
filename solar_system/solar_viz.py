@@ -1,7 +1,7 @@
 import tkinter as tk
 from abc import ABC, abstractmethod
 from random import choice
-import os, math
+import os, math, copy
 from solar_system.solar_input import *
 from solar_system.solar_model import *
 from solar_system.solar_objects import *
@@ -42,6 +42,7 @@ class CosmicBody(Agent):
     def __init__(
             self,
             canvas,
+            name,
             alpha_start,
             size_r,
             rotation_a,
@@ -55,6 +56,7 @@ class CosmicBody(Agent):
         super().__init__()
         self.job = job_init
         self.canvas = canvas
+        self.name = name
         self.alpha = alpha_start
         self.size_r = size_r
         self.pivot_x = WINDOW_SHAPE[0] / 2
@@ -115,6 +117,20 @@ class CosmicBody(Agent):
         self.stop()
         self.canvas.delete(self.id)
 
+    def get_state(self):
+        state = {
+            'name': self.name,
+            'alpha_start': self.alpha,
+            'size_r': self.size_r,
+            'rotation_a': self.rotation_a,
+            'rotation_b': self.rotation_b,
+            'alpha_a': self.alpha_a,
+            'period_of_rotation': self.period_of_rotation,
+            'color': self.color,
+            'job': self.job is not None
+        }
+        return state
+
 
 class SolarField(tk.Canvas):
     def __init__(self, master):
@@ -124,6 +140,7 @@ class SolarField(tk.Canvas):
 
     def create_cosmic_objects(self):
         for key, value in self.cosmic_objects.items():
+            name = value['name']
             size_r = value['r']
             alpha_start = 2 * math.pi * value['alpha_start'] / 360
             rotation_a = value['rotation_a']
@@ -132,14 +149,27 @@ class SolarField(tk.Canvas):
             period_of_rotation = SPEED * value['period_of_rotation_in_days'] / 365
             color = '#{0:0^2x}{1:0^2x}{2:0^2x}'.format(*value['color'])
 
-            obj = CosmicBody(self, alpha_start, size_r, rotation_a, rotation_b, alpha_a, period_of_rotation, color)
-            self.planets[key] = obj
+            obj = CosmicBody(
+                self, name, alpha_start, size_r, rotation_a, rotation_b, alpha_a, period_of_rotation, color
+            )
+            self.planets[obj.id] = obj
 
     def get_state(self):
-        return dict()
+        state = {
+            'cosmic_objects': [pl.get_state() for pl in self.planets.values()]
+        }
+        return state
 
     def set_state(self, state, job_init):
-        pass
+        self.remove_planets()
+        self.create_planets_from_state(state['cosmic_objects'], job_init)
+
+    def create_planets_from_state(self, states, job_init):
+        states = copy.deepcopy(states)
+        for state in states:
+            job_active = state.pop('job')
+            obj = CosmicBody(self, **state, job_init=job_init if job_active else None)
+            self.planets[obj.id] = obj
 
     def restart(self):
         self.stop()

@@ -13,7 +13,7 @@ def write_space_objects_data_to_file(state, save_dir):
 def read_space_objects_data_from_file(save_dir):
     file_name = get_load_file_name(save_dir)
     if file_name is not None:
-        with open(file_name, 'w') as file:
+        with open(file_name, 'r') as file:
             state = json.load(file)
         return state
 
