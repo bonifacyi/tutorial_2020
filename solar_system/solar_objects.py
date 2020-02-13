@@ -1,6 +1,6 @@
 WINDOW_SHAPE = (1300, 1000)     # pix
 DT = 30         # milli sec
-SPEED = 10      # sec, real time for full rotation of earth
+NORMAL_PERIOD = 10      # sec, real time for full rotation of earth
 """  """
 STATE_OBJECTS = {
     'solar_field': {
@@ -14,6 +14,8 @@ STATE_OBJECTS = {
                 'alpha_a': 0,
                 'period_of_rotation_in_days': 80,
                 'color': (255, 255, 0),
+                'parent': None,
+                'sputnik': None,
             },
             {
                 'name': 'Solar',
@@ -24,6 +26,8 @@ STATE_OBJECTS = {
                 'alpha_a': 0,
                 'period_of_rotation_in_days': 80,
                 'color': (255, 255, 0),
+                'parent': None,
+                'sputnik': None,
             },
             {
                 'name': 'Mercury',
@@ -34,6 +38,8 @@ STATE_OBJECTS = {
                 'alpha_a': 45,
                 'period_of_rotation_in_days': 150,
                 'color': (237, 200, 100),
+                'parent': None,
+                'sputnik': None,
             },
             {
                 'name': 'Venus',
@@ -44,6 +50,8 @@ STATE_OBJECTS = {
                 'alpha_a': 0,
                 'period_of_rotation_in_days': 225,
                 'color': (123, 235, 237),
+                'parent': None,
+                'sputnik': None,
             },
             {
                 'name': 'Earth',
@@ -54,6 +62,8 @@ STATE_OBJECTS = {
                 'alpha_a': 0,
                 'period_of_rotation_in_days': 365,
                 'color': (5, 150, 180),
+                'parent': None,
+                'sputnik': 'Luna',
             },
             {
                 'name': 'Mars',
@@ -64,6 +74,8 @@ STATE_OBJECTS = {
                 'alpha_a': 0,
                 'period_of_rotation_in_days': 450,
                 'color': (230, 140, 70),
+                'parent': None,
+                'sputnik': None,
             },
             {
                 'name': 'Jupiter',
@@ -74,6 +86,8 @@ STATE_OBJECTS = {
                 'alpha_a': 0,
                 'period_of_rotation_in_days': 600,
                 'color': (145, 130, 110),
+                'parent': None,
+                'sputnik': None,
             },
             {
                 'name': 'Saturn',
@@ -84,6 +98,8 @@ STATE_OBJECTS = {
                 'alpha_a': 0,
                 'period_of_rotation_in_days': 700,
                 'color': (195, 185, 95),
+                'parent': None,
+                'sputnik': None,
             },
             {
                 'name': 'Uranium',
@@ -94,6 +110,8 @@ STATE_OBJECTS = {
                 'alpha_a': 0,
                 'period_of_rotation_in_days': 900,
                 'color': (140, 200, 220),
+                'parent': None,
+                'sputnik': None,
             },
             {
                 'name': 'Neptune',
@@ -104,6 +122,8 @@ STATE_OBJECTS = {
                 'alpha_a': 0,
                 'period_of_rotation_in_days': 1000,
                 'color': (120, 133, 224),
+                'parent': None,
+                'sputnik': None,
             },
             {
                 'name': 'Pluto',
@@ -114,6 +134,20 @@ STATE_OBJECTS = {
                 'alpha_a': 30,
                 'period_of_rotation_in_days': 1100,
                 'color': (120, 133, 224),
+                'parent': None,
+                'sputnik': None,
+            },
+            {
+                'name': 'Luna',
+                'alpha_start': 0,
+                'r': 4,
+                'rotation_a': 20,
+                'rotation_b': 20,
+                'alpha_a': 0,
+                'period_of_rotation_in_days': 30,
+                'color': (120, 133, 133),
+                'parent': 'Earth',
+                'sputnik': None,
             },
         ]
     }

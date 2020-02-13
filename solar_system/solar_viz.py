@@ -1,10 +1,11 @@
 import tkinter as tk
 from abc import ABC, abstractmethod
 from random import choice
-import os, math, copy
+import os, math, copy, numpy
 from solar_system.solar_input import *
 from solar_system.solar_model import *
 from solar_system.solar_objects import *
+from solar_system.solar_plot import *
 
 
 class Agent(ABC):
@@ -51,7 +52,7 @@ class CosmicBody(Agent):
             period_of_rotation,
             color=None,
             job_init=None,
-
+            parent=None
     ):
         super().__init__()
         self.job = job_init
@@ -65,13 +66,26 @@ class CosmicBody(Agent):
         self.rotation_b = rotation_b
         self.alpha_a = alpha_a
         self.period_of_rotation = period_of_rotation
+        self.parent = parent
         if color is None:
             self.color = choice(['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple'])
         else:
             self.color = color
 
-        self.x = rotation_a * math.cos(self.alpha) + self.pivot_x
-        self.y = self.pivot_y - rotation_b * math.sin(self.alpha)
+        self.x, self.y = point_on_ellipse(
+            self.alpha, self.rotation_a, self.rotation_b, self.alpha_a, self.pivot_x, self.pivot_y)
+        self.speed = 0
+        self.remoteness = 0
+        self.time = 0
+
+        self.stats = {
+            'x': [self.x],
+            'y': [self.y],
+            'speed': [],
+            'remoteness': [],
+            'time': [self.time],
+        }
+
         self.id = self.canvas.create_oval(
             self.x - self.size_r,
             self.y - self.size_r,
@@ -93,6 +107,8 @@ class CosmicBody(Agent):
         super().pause()
 
     def update(self):
+        x_start, y_start = self.x, self.y
+
         self.x, self.y, self.alpha = ellipse_cosmic_body_motion(
             self.alpha,
             self.rotation_a,
@@ -103,6 +119,12 @@ class CosmicBody(Agent):
             DT,
             self.period_of_rotation
         )
+
+        self.time += DT / 1000
+        self.speed = calculate_speed(x_start, y_start, self.x, self.y, DT)
+        self.remoteness = calculate_remoteness(self.x, self.y, self.pivot_x, self.pivot_y)
+        self.add_parameters_to_stats()
+
         self.set_coord()
         self.job = self.canvas.after(DT, self.update)
 
@@ -133,6 +155,16 @@ class CosmicBody(Agent):
         }
         return state
 
+    def add_parameters_to_stats(self):
+        self.stats['x'].append(self.x)
+        self.stats['y'].append(self.y)
+        self.stats['speed'].append(self.speed)
+        self.stats['remoteness'].append(self.remoteness)
+        self.stats['time'].append(self.time)
+
+    def get_parameters_from_stats(self):
+        return self.stats
+
 
 class SolarField(tk.Canvas):
     def __init__(self, master):
@@ -148,13 +180,14 @@ class SolarField(tk.Canvas):
             rotation_a = value['rotation_a']
             rotation_b = value['rotation_b']
             alpha_a = 2 * math.pi * value['alpha_a'] / 360
-            period_of_rotation = SPEED * value['period_of_rotation_in_days'] / 365
+            period_of_rotation = NORMAL_PERIOD * value['period_of_rotation_in_days'] / 365
             color = '#{0:0^2x}{1:0^2x}{2:0^2x}'.format(*value['color'])
-
-            obj = CosmicBody(
-                self, name, alpha_start, size_r, rotation_a, rotation_b, alpha_a, period_of_rotation, color
-            )
-            self.planets[obj.id] = obj
+            parent = value['parent']
+            if parent in None:
+                obj = CosmicBody(
+                    self, name, alpha_start, size_r, rotation_a, rotation_b, alpha_a, period_of_rotation, color
+                )
+                self.planets[obj.id] = obj
 
     def get_state(self):
         state = {
@@ -204,6 +237,52 @@ class SolarField(tk.Canvas):
             self.planets[key].destroy()
             del self.planets[key]
 
+    def get_history_stats(self):
+        history_stats = dict()
+        for planet in self.planets.values():
+            stats = planet.get_parameters_from_stats()
+            history_stats[planet.name] = dict()
+            history_stats[planet.name]['x'] = stats['x']
+            history_stats[planet.name]['y'] = stats['y']
+            history_stats[planet.name]['speed'] = stats['speed']
+        return history_stats
+
+    def plot_speed_from_time(self):
+        for planet in self.planets.values():
+            stats = planet.get_parameters_from_stats()
+            stat_x = stats['time']
+            stat_y = stats['speed']
+            name_x = 't, sec'
+            name_y = 'V, pix/sec'
+            title = 'Speed'
+            plot_solar_stats(stat_x, stat_y, planet.name, name_x, name_y, title)
+        mp.legend()
+        mp.show()
+
+    def plot_remoteness_from_time(self):
+        for planet in self.planets.values():
+            stats = planet.get_parameters_from_stats()
+            stat_x = stats['time']
+            stat_y = stats['remoteness']
+            name_x = 't, sec'
+            name_y = 'R, pix'
+            title = 'Remoteness'
+            plot_solar_stats(stat_x, stat_y, planet.name, name_x, name_y, title)
+        mp.legend()
+        mp.show()
+
+    def plot_speed_from_remoteness(self):
+        for planet in self.planets.values():
+            stats = planet.get_parameters_from_stats()
+            stat_x = stats['remoteness']
+            stat_y = stats['speed']
+            name_x = 'R, pix'
+            name_y = 'V, pix/sec'
+            title = 'Speed-Remoteness'
+            plot_solar_stats(stat_x, stat_y, planet.name, name_x, name_y, title)
+        mp.legend()
+        mp.show()
+
 
 class MainFrame(tk.Frame):
     def __init__(self, master):
@@ -231,6 +310,19 @@ class MainFrame(tk.Frame):
     def stop(self):
         self.solar_field.stop()
 
+    def plot_speed_from_time(self):
+        self.solar_field.plot_speed_from_time()
+
+    def plot_remoteness_from_time(self):
+        self.solar_field.plot_remoteness_from_time()
+
+    def plot_speed_from_remoteness(self):
+        self.solar_field.plot_speed_from_remoteness()
+
+    def get_history_stats(self):
+        history_stats = self.solar_field.get_history_stats()
+        return history_stats
+
 
 class Menu(tk.Menu):
     def __init__(self, master):
@@ -239,6 +331,8 @@ class Menu(tk.Menu):
         self.file_menu = tk.Menu(self)
         self.file_menu.add_command(label='save', command=self.master.save)
         self.file_menu.add_command(label='load', command=self.master.load)
+        self.file_menu.add_command(label='save history', command=self.master.save_history)
+        self.file_menu.add_command(label='exit', command=self.master.quit)
         self.add_cascade(label='file', menu=self.file_menu)
 
         self.main_menu = tk.Menu(self)
@@ -246,8 +340,13 @@ class Menu(tk.Menu):
         self.main_menu.add_command(label='play', command=self.master.play)
         self.main_menu.add_command(label='pause', command=self.master.pause)
         self.main_menu.add_command(label='stop', command=self.master.stop)
-        self.main_menu.add_command(label='exit', command=self.master.quit)
         self.add_cascade(label="main menu", menu=self.main_menu)
+
+        self.plot = tk.Menu(self)
+        self.plot.add_command(label='plot speed-time', command=self.master.plot_speed_from_time)
+        self.plot.add_command(label='plot remoteness-time', command=self.master.plot_remoteness_from_time)
+        self.plot.add_command(label='plot speed-remoteness', command=self.master.plot_speed_from_remoteness)
+        self.add_cascade(label='plot', menu=self.plot)
 
 
 class SolarApp(tk.Tk):
@@ -276,6 +375,12 @@ class SolarApp(tk.Tk):
         self.set_state(state)
         self.play()
 
+    def save_history(self):
+        self.pause()
+        history_stats = self.main_frame.get_history_stats()
+        write_space_objects_data_to_file(history_stats, self.save_dir)
+        self.play()
+
     def get_state(self):
         return {'main_frame': self.main_frame.get_state()}
 
@@ -293,3 +398,12 @@ class SolarApp(tk.Tk):
 
     def stop(self):
         self.main_frame.stop()
+
+    def plot_speed_from_time(self):
+        self.main_frame.plot_speed_from_time()
+
+    def plot_remoteness_from_time(self):
+        self.main_frame.plot_remoteness_from_time()
+
+    def plot_speed_from_remoteness(self):
+        self.main_frame.plot_speed_from_remoteness()
