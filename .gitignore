@@ -1,0 +1,9 @@
+/solar_system/save/
+/cannon/gun_obfuscated.py
+/cannon/hit_check.py
+/cannon/gun_sample.py
+/Administration/ServersIP.xlsx
+*__pycache__*
+/.idea/
+/temp.py
+

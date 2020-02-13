@@ -98,8 +98,10 @@ class CosmicBody(Agent):
             self.rotation_a,
             self.rotation_b,
             self.alpha_a,
-            self.pivot_x, self.pivot_y,
-            DT, self.period_of_rotation
+            self.pivot_x,
+            self.pivot_y,
+            DT,
+            self.period_of_rotation
         )
         self.set_coord()
         self.job = self.canvas.after(DT, self.update)
@@ -127,7 +129,7 @@ class CosmicBody(Agent):
             'alpha_a': self.alpha_a,
             'period_of_rotation': self.period_of_rotation,
             'color': self.color,
-            'job': self.job is not None
+            'job': self.job is not None,
         }
         return state
 
@@ -139,7 +141,7 @@ class SolarField(tk.Canvas):
         self.planets = dict()
 
     def create_cosmic_objects(self):
-        for key, value in self.cosmic_objects.items():
+        for value in self.cosmic_objects:
             name = value['name']
             size_r = value['r']
             alpha_start = 2 * math.pi * value['alpha_start'] / 360
