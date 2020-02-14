@@ -1,7 +1,7 @@
 import tkinter as tk
 from abc import ABC, abstractmethod
 from random import choice
-import os, math, copy, numpy
+import os, math, copy
 from solar_system.solar_input import *
 from solar_system.solar_model import *
 from solar_system.solar_objects import *
@@ -52,7 +52,8 @@ class CosmicBody(Agent):
             period_of_rotation,
             color=None,
             job_init=None,
-            parent=None
+            parent=None,
+            sputnik=None,
     ):
         super().__init__()
         self.job = job_init
@@ -60,30 +61,31 @@ class CosmicBody(Agent):
         self.name = name
         self.alpha = alpha_start
         self.size_r = size_r
-        self.pivot_x = WINDOW_SHAPE[0] / 2
-        self.pivot_y = WINDOW_SHAPE[1] / 2
         self.rotation_a = rotation_a
         self.rotation_b = rotation_b
         self.alpha_a = alpha_a
         self.period_of_rotation = period_of_rotation
         self.parent = parent
+        self.axis_x, self.axis_y = AXIS_X, AXIS_Y
+        self.sputnik = sputnik
+        self.generated_sputniks = dict()
         if color is None:
             self.color = choice(['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple'])
         else:
             self.color = color
 
         self.x, self.y = point_on_ellipse(
-            self.alpha, self.rotation_a, self.rotation_b, self.alpha_a, self.pivot_x, self.pivot_y)
+            self.alpha, self.rotation_a, self.rotation_b, self.alpha_a, self.axis_x, self.axis_y)
         self.speed = 0
         self.remoteness = 0
         self.time = 0
 
         self.stats = {
-            'x': [self.x],
-            'y': [self.y],
+            'x': [],
+            'y': [],
             'speed': [],
             'remoteness': [],
-            'time': [self.time],
+            'time': [],
         }
 
         self.id = self.canvas.create_oval(
@@ -93,6 +95,17 @@ class CosmicBody(Agent):
             self.y + self.size_r,
             fill=self.color
         )
+
+    def get_coord(self):
+        return self.x, self.y
+
+    def set_sputnik_axis(self, axis_x, axis_y):
+        self.axis_x, self.axis_y = axis_x, axis_y
+        self.x, self.y = point_on_ellipse(
+            self.alpha, self.rotation_a, self.rotation_b, self.alpha_a, self.axis_x, self.axis_y)
+
+    def get_parent(self):
+        return self.parent
 
     def start(self):
         super().start()
@@ -108,21 +121,20 @@ class CosmicBody(Agent):
 
     def update(self):
         x_start, y_start = self.x, self.y
-
         self.x, self.y, self.alpha = ellipse_cosmic_body_motion(
             self.alpha,
             self.rotation_a,
             self.rotation_b,
             self.alpha_a,
-            self.pivot_x,
-            self.pivot_y,
+            self.axis_x,
+            self.axis_y,
             DT,
             self.period_of_rotation
         )
 
         self.time += DT / 1000
         self.speed = calculate_speed(x_start, y_start, self.x, self.y, DT)
-        self.remoteness = calculate_remoteness(self.x, self.y, self.pivot_x, self.pivot_y)
+        self.remoteness = calculate_remoteness(self.x, self.y, self.axis_x, self.axis_y)
         self.add_parameters_to_stats()
 
         self.set_coord()
@@ -171,10 +183,12 @@ class SolarField(tk.Canvas):
         super().__init__(master, background='white')
         self.cosmic_objects = STATE_OBJECTS['solar_field']['cosmic_objects']
         self.planets = dict()
+        self.sputniks = dict()
+        self.update_sputnik_axis = None
 
     def create_cosmic_objects(self):
-        for value in self.cosmic_objects:
-            name = value['name']
+        for key, value in self.cosmic_objects.items():
+            name = key
             size_r = value['r']
             alpha_start = 2 * math.pi * value['alpha_start'] / 360
             rotation_a = value['rotation_a']
@@ -183,11 +197,31 @@ class SolarField(tk.Canvas):
             period_of_rotation = NORMAL_PERIOD * value['period_of_rotation_in_days'] / 365
             color = '#{0:0^2x}{1:0^2x}{2:0^2x}'.format(*value['color'])
             parent = value['parent']
-            if parent in None:
-                obj = CosmicBody(
-                    self, name, alpha_start, size_r, rotation_a, rotation_b, alpha_a, period_of_rotation, color
-                )
-                self.planets[obj.id] = obj
+            sputnik = value['sputnik']
+            obj = CosmicBody(
+                self,
+                name,
+                alpha_start,
+                size_r,
+                rotation_a,
+                rotation_b,
+                alpha_a,
+                period_of_rotation,
+                color=color,
+                parent=parent,
+                sputnik=sputnik,
+            )
+            if parent is None:
+                self.planets[key] = obj
+            else:
+                self.sputniks[key] = obj
+
+    def set_axis_coord_for_sputniks(self):
+        for name, sputnik in self.sputniks.items():
+            parent = sputnik.get_parent()
+            axis_x, axis_y = self.planets[parent].get_coord()
+            self.sputniks[name].set_sputnik_axis(axis_x, axis_y)
+        self.update_sputnik_axis = self.after(DT, self.set_axis_coord_for_sputniks)
 
     def get_state(self):
         state = {
@@ -204,7 +238,7 @@ class SolarField(tk.Canvas):
         for state in states:
             job_active = state.pop('job')
             obj = CosmicBody(self, **state, job_init=job_init if job_active else None)
-            self.planets[obj.id] = obj
+            self.planets[obj.name] = obj
 
     def restart(self):
         self.stop()
@@ -213,28 +247,47 @@ class SolarField(tk.Canvas):
         self.start()
 
     def start(self):
+        self.update_sputnik_axis = self.after(DT, self.set_axis_coord_for_sputniks)
         for planet in self.planets.values():
             planet.start()
+        for sputnik in self.sputniks.values():
+            sputnik.start()
 
     def pause(self):
         for planet in self.planets.values():
             planet.pause()
+        for sputnik in self.sputniks.values():
+            sputnik.pause()
+        if self.update_sputnik_axis is not None:
+            self.after_cancel(self.update_sputnik_axis)
+            self.update_sputnik_axis = 'pause'
 
     def play(self):
+        if self.update_sputnik_axis == 'pause':
+            self.update_sputnik_axis = self.after(DT, self.set_axis_coord_for_sputniks)
         for planet in self.planets.values():
             planet.play()
+        for sputnik in self.sputniks.values():
+            sputnik.play()
 
     def stop(self):
         for planet in self.planets.values():
             planet.stop()
+        for sputnik in self.sputniks.values():
+            sputnik.stop()
+        if self.update_sputnik_axis is not None:
+            self.after_cancel(self.update_sputnik_axis)
 
     def remove_planets(self, planets_to_remove=None):
         if planets_to_remove is None:
-            keys = list(self.planets)
+            keys = list(self.planets) + list(self.sputniks)
         else:
             keys = list(planets_to_remove)
         for key in keys:
-            self.planets[key].destroy()
+            if key in self.planets:
+                self.planets[key].destroy()
+            else:
+                self.sputniks[key].destroy()
             del self.planets[key]
 
     def get_history_stats(self):
