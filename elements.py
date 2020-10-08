@@ -6,6 +6,7 @@ from math import pi, sin, cos, sqrt
 
 
 def background(width, height, horizon, up_color, bottom_color):
+    """ generate base field """
     windowSize(width, height)
     canvasSize(width, height)
     penColor(up_color)
