@@ -6,6 +6,7 @@ from math import pi, sin, cos, sqrt
 
 
 def background(width, height, horizon, up_color, bottom_color):
+    """ generate base field """
     windowSize(width, height)
     canvasSize(width, height)
     penColor(up_color)
@@ -24,7 +25,7 @@ def stolb(x, width, height, color):
 
 
 def spine(x, y, width, color, corner=0):
-    """x, y - center of base"""
+    """x, y - center of base, color - (r, g, b)"""
     corner = (corner * 2 * pi) / 360
     height = width * 8
     penColor(0, 0, 0)
