@@ -176,7 +176,7 @@ if __name__ == '__main__':
     height = 1000
     horizon = 600
 
-    up_color = (120, 190, 120)
+    up_color = (100, 200, 150)
     bottom_color = (145, 90, 60)
     background(width, height, horizon, up_color, bottom_color)
     stolb_color = (227, 177, 50)
